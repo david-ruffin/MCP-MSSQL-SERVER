@@ -221,32 +221,45 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]
 * Returns results in CSV format for SELECT queries
 * Returns affected row count for modification queries
 
-## Usage with Claude Desktop
+## Usage with MCP Clients (Claude Desktop, Cursor, WindSurf, etc.)
 
-Add to your Claude Desktop configuration:
+Add this server to your MCP client configuration file. The exact file location depends on the client:
 
-On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+*   **Claude Desktop:**
+    *   macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+    *   Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+*   **Cursor:** Check Cursor's MCP settings documentation.
+*   **WindSurf:** Check WindSurf's MCP settings documentation.
+
+Add an entry for this server under the `mcpServers` key, adjusting paths as needed:
 
 ```json
 {
   "mcpServers": {
-    "mssql": {
-      "command": "python",
+    "MCP-MSSQL": { // You can choose a name for the server
+      "command": "<path_to_your_venv>/bin/python",
       "args": [
-        "server.py"
+        "<path_to_project_root>/src/mssql/server.py"
       ],
       "env": {
-        "MSSQL_SERVER": "your_server",
+        "MSSQL_SERVER": "your_server", // See .env configuration
         "MSSQL_DATABASE": "your_database",
-        "MSSQL_USER": "your_username",
-        "MSSQL_PASSWORD": "your_password",
-        "MSSQL_DRIVER": "{ODBC Driver 17 for SQL Server}"
+        "MSSQL_USER": "your_username", 
+        "MSSQL_PASSWORD": "your_password", 
+        "MSSQL_DRIVER": "{ODBC Driver 17 for SQL Server}" // Or your installed driver name
       }
-    }
+    },
+    // ... other servers ...
   }
 }
 ```
+
+**Notes:**
+
+*   Replace `<path_to_your_venv>` with the absolute path to the Python interpreter inside your project's virtual environment.
+*   Replace `<path_to_project_root>` with the absolute path to the root directory of this project (`MCP-MSSQL-SERVER`).
+*   The values in the `env` section should match your `.env` file. Ensure the Python script can access these environment variables or the `.env` file itself when run by the MCP client.
+*   The server name (`MCP-MSSQL` in this example) is how you will refer to this server's tools within the client (e.g., `@MCP-MSSQL list_tables`).
 
 ## Error Handling
 
