@@ -1,6 +1,6 @@
 # Python MSSQL MCP Server
 
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/amornpan/py-mcp-mssql)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/david-ruffin/MCP-MSSQL-SERVER)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org)
 [![MCP](https://img.shields.io/badge/MCP-1.2.0-green.svg)](https://github.com/modelcontextprotocol)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-teal.svg)](https://fastapi.tiangolo.com)
@@ -33,8 +33,8 @@ A Model Context Protocol server implementation in Python that provides access to
 ## Installation
 
 ```bash
-git clone https://github.com/amornpan/py-mcp-mssql.git
-cd py-mcp-mssql
+git clone https://github.com/david-ruffin/MCP-MSSQL-SERVER.git
+cd MCP-MSSQL-SERVER
 pip install -r requirements.txt
 ```
 
@@ -87,6 +87,107 @@ MSSQL_DATABASE=your_database
 MSSQL_USER=your_username
 MSSQL_PASSWORD=your_password
 MSSQL_DRIVER={ODBC Driver 17 for SQL Server}
+```
+
+## ODBC Driver Setup & Verification
+
+**Important:** This server relies on the Microsoft ODBC Driver for SQL Server (version 17 or 18 recommended) being installed on the system where the server runs.
+
+### 🔍 How to Verify Installation
+
+**macOS / Linux:**
+
+Open your terminal and run:
+
+```bash
+odbcinst -q -d
+```
+
+Look for output similar to this (the exact version might differ):
+
+```
+[ODBC Driver 18 for SQL Server]
+```
+
+**Windows (Command Prompt or PowerShell):**
+
+Run this command in PowerShell:
+
+```powershell
+Get-OdbcDriver | Where-Object Name -like "*SQL Server*"
+```
+
+Alternatively, open the ODBC Data Sources administrator:
+
+1.  Press `Win + R`, type `odbcad32.exe`, and press Enter.
+2.  Go to the "Drivers" tab.
+3.  Look for "ODBC Driver 17 for SQL Server" or "ODBC Driver 18 for SQL Server".
+
+### 🛠️ Installation if Missing
+
+If the required driver is not installed:
+
+*   **macOS / Linux:** Follow Microsoft's official installation guide:
+    [Install the Microsoft ODBC driver for SQL Server (Linux)](https://learn.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+*   **Windows:** Download and install the driver from Microsoft:
+    [Download ODBC Driver for SQL Server](https://learn.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server)
+    *Direct link for ODBC Driver 18 (check the page for the latest):* [https://go.microsoft.com/fwlink/?linkid=2221350](https://go.microsoft.com/fwlink/?linkid=2221350)
+
+### 🧪 Test Connection Manually (Optional)
+
+After configuring your `.env` file (see Configuration section above), you can test the connection directly using `pyodbc` from your Python environment (ensure `pyodbc` is installed via `requirements.txt`):
+
+```python
+import os
+import pyodbc
+from dotenv import load_dotenv
+
+load_dotenv() # Load variables from .env
+
+server = os.getenv('MSSQL_SERVER')
+database = os.getenv('MSSQL_DATABASE')
+username = os.getenv('MSSQL_USER')
+password = os.getenv('MSSQL_PASSWORD')
+driver = os.getenv('MSSQL_DRIVER') # Make sure this matches your installed driver
+
+if not all([server, database, username, password, driver]):
+    print("Error: Ensure MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD, and MSSQL_DRIVER are set in your .env file")
+else:
+    try:
+        # Note: TrustServerCertificate=yes might be needed for Azure SQL or certain configs
+        # Adjust other parameters like Port if necessary
+        conn_str = (
+            f"DRIVER={{{driver}}};"
+            f"SERVER={server};"
+            f"DATABASE={database};"
+            f"UID={username};"
+            f"PWD={password};"
+            f"TrustServerCertificate=yes;"
+        )
+        print(f"Attempting to connect with:\n{conn_str}\n")
+        conn = pyodbc.connect(conn_str)
+        print("Connection Successful!")
+        conn.close()
+        print("Connection Closed.")
+    except pyodbc.Error as ex:
+        sqlstate = ex.args[0]
+        print(f"Connection Failed. SQLSTATE: {sqlstate}")
+        print(ex)
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+```
+
+### ✅ Final `.env` Example
+
+Make sure your `.env` file looks similar to this, replacing the placeholder values with your actual credentials and ensuring the `MSSQL_DRIVER` matches the exact name shown by `odbcinst -q -d` or the ODBC Administrator:
+
+```ini
+MSSQL_SERVER=your_server.database.windows.net
+MSSQL_DATABASE=your_database_name
+MSSQL_USER=your_db_username
+MSSQL_PASSWORD=your_secret_password
+MSSQL_DRIVER=ODBC Driver 18 for SQL Server
 ```
 
 ## API Implementation Details
@@ -166,27 +267,9 @@ All errors are logged and returned with appropriate error messages.
 * Input validation through Pydantic
 * Proper SQL query handling
 
-## Contact Information
-
-### Amornpan Phornchaicharoen
-
-[![Email](https://img.shields.io/badge/Email-amornpan%40gmail.com-red?style=flat-square&logo=gmail)](mailto:amornpan@gmail.com)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Amornpan-blue?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/amornpan/)
-[![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-amornpan-yellow?style=flat-square)](https://huggingface.co/amornpan)
-[![GitHub](https://img.shields.io/badge/GitHub-amornpan-black?style=flat-square&logo=github)](https://github.com/amornpan)
-
-Feel free to reach out to me if you have any questions about this project or would like to collaborate!
-
----
-*Made with ❤️ by Amornpan Phornchaicharoen*
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Author
-
-Amornpan Phornchaicharoen
 
 ## Contributing
 
@@ -217,10 +300,3 @@ These versions have been tested and verified to work together. The key component
 * `mcp` for Model Context Protocol implementation
 * `python-dotenv` for environment configuration
 * `anyio` for asynchronous I/O support
-
-## Acknowledgments
-
-* Microsoft SQL Server team for ODBC drivers
-* Python pyodbc maintainers
-* Model Context Protocol community
-* Contributors to the python-dotenv project
