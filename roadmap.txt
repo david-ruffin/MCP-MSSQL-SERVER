@@ -1,0 +1,74 @@
+# GOAL: Build a chat-based interface that allows users to query an existing SQL database in natural language. The system will translate questions into SQL and return answers, using AI for language understanding. A simple web frontend will provide the chat UI, and a backend will handle AI logic and database communication.
+
+## Project Setup (Environment)
+- [x] Initialize repository and environment
+  - Must pass `pytest` with no errors (initially finding no tests)
+  - Must pass `flake8` with no errors
+  - Repo structure must be properly committed
+
+- [x] Load environment variables
+  - Must pass test confirming env variables are accessible in code
+  - Must have no hardcoded secrets
+  - Must pass `flake8` with no errors in config.py
+
+## Backend: Query Handling Logic
+- [x] Define the query function (TDD)
+  - Must pass test_answer.py that verifies answer_question calls database functions
+  - Must pass test that ensures it handles empty results/errors
+  - Must pass `flake8` with no errors in answer.py
+
+- [x] Implement answer_question using MCP tools
+  - Must pass previously written tests in test_answer.py
+  - Must handle exceptions properly
+  - Must pass `flake8` with no errors in answer.py
+  - Must manually verify with sample inputs
+
+- [x] Create API Endpoint for queries
+  - Must pass test_api.py for sample question/response
+  - Must respond with appropriate status codes
+  - Must pass `flake8` with no errors in api.py
+
+## Frontend: Chat Interface
+- [x] Generate UI with Magic or custom HTML/CSS/JS
+  - Must have message list and input form
+  - Must have elements with proper IDs/classes for JS targeting
+  - Must pass HTML validation
+
+- [x] Hook up front-end logic
+  - Must successfully call backend API
+  - Must display user questions and AI responses
+  - Must handle errors gracefully
+  - Must pass basic front-end tests
+
+- [ ] Style and UX improvements
+  - Must be mobile-friendly
+  - Must have distinct styling for user vs AI messages
+  - Must have appropriate loading indicators
+
+## Integration and Testing
+- [x] Implement additional unit tests
+  - Must test SQL conversion logic
+  - Must test error handling cases
+  - Must achieve reasonable test coverage
+
+- [ ] Implement end-to-end test with Puppeteer
+  - Must successfully simulate user interaction
+  - Must verify appropriate responses
+
+- [ ] Lint and format code
+  - Must pass flake8 on all Python code
+  - Must pass validation on frontend code
+
+## Final Review and Launch
+- [ ] Review and harden code
+  - Must have no sensitive information in code
+  - Must have appropriate error handling
+  - Must properly limit database modifications
+
+- [ ] Documentation
+  - Must have complete setup instructions
+  - Must document how to configure and run the application
+  - Must include MCP server configurations
+
+- [ ] Optional: Deployment
+  - Must document deployment steps if implemented
