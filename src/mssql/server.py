@@ -59,9 +59,8 @@ def is_read_only_query(query: str) -> bool:
         
     return True
 
-@mcp.resource("mssql://tables")
-def list_tables() -> str:
-    """List all database tables"""
+def list_tables_raw() -> str:
+    """Raw function for listing all database tables"""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -71,9 +70,8 @@ def list_tables() -> str:
         tables = cursor.fetchall()
         return "\n".join([f"{schema}.{table}" for schema, table in tables])
 
-@mcp.resource("mssql://table/{table_name}")
-def get_table_data(table_name: str) -> str:
-    """Get top 100 rows from a table"""
+def get_table_data_raw(table_name: str) -> str:
+    """Raw function for getting top 100 rows from a table"""
     query = f"SELECT TOP 100 * FROM {table_name}"
     
     if not is_read_only_query(query):
@@ -88,6 +86,16 @@ def get_table_data(table_name: str) -> str:
         result = [",".join(columns)]
         result.extend([",".join(map(str, row)) for row in rows])
         return "\n".join(result)
+
+@mcp.resource("mssql://tables")
+def list_tables() -> str:
+    """List all database tables"""
+    return list_tables_raw()
+
+@mcp.resource("mssql://table/{table_name}")
+def get_table_data(table_name: str) -> str:
+    """Get top 100 rows from a table"""
+    return get_table_data_raw(table_name)
 
 def execute_sql_raw(query: str) -> str:
     """Raw function for executing SQL queries"""
