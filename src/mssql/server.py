@@ -97,6 +97,63 @@ def get_table_data(table_name: str) -> str:
     """Get top 100 rows from a table"""
     return get_table_data_raw(table_name)
 
+def describe_table_raw(table_name: str) -> str:
+    """Raw function for describing table structure"""
+    # Validate table name format (schema.table or just table)
+    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$', table_name):
+        return "Error: Invalid table name format"
+    
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Split table name if it contains schema
+            if '.' in table_name:
+                schema, table = table_name.split('.', 1)
+                where_clause = "AND TABLE_SCHEMA = ? AND TABLE_NAME = ?"
+                params = (schema, table)
+            else:
+                where_clause = "AND TABLE_NAME = ?"
+                params = (table_name,)
+            
+            # Get column information
+            query = """
+            SELECT 
+                COLUMN_NAME,
+                DATA_TYPE,
+                IS_NULLABLE,
+                COLUMN_DEFAULT,
+                CHARACTER_MAXIMUM_LENGTH,
+                NUMERIC_PRECISION,
+                NUMERIC_SCALE,
+                ORDINAL_POSITION
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE 1=1 """ + where_clause + """
+            ORDER BY ORDINAL_POSITION
+            """
+            
+            cursor.execute(query, params)
+            columns = cursor.fetchall()
+            
+            if not columns:
+                return f"Error: Table '{table_name}' not found"
+            
+            # Format results
+            result = ["COLUMN_NAME,DATA_TYPE,IS_NULLABLE,COLUMN_DEFAULT,MAX_LENGTH,PRECISION,SCALE"]
+            for col in columns:
+                col_name, data_type, is_nullable, default, max_len, precision, scale, _ = col
+                max_len = str(max_len) if max_len else ""
+                precision = str(precision) if precision else ""
+                scale = str(scale) if scale else ""
+                default = str(default) if default else ""
+                
+                result.append(f"{col_name},{data_type},{is_nullable},{default},{max_len},{precision},{scale}")
+            
+            return "\n".join(result)
+            
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 def execute_sql_raw(query: str) -> str:
     """Raw function for executing SQL queries"""
     if not is_read_only_query(query):
@@ -115,6 +172,11 @@ def execute_sql_raw(query: str) -> str:
             return "\n".join(result)
     except Exception as e:
         return f"Error: {str(e)}"
+
+@mcp.tool()
+def describe_table(table_name: str) -> str:
+    """Describe table structure (columns, data types, constraints)"""
+    return describe_table_raw(table_name)
 
 @mcp.tool()
 def execute_sql(query: str) -> str:

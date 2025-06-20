@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.mssql.server import get_connection, is_read_only_query, execute_sql_raw, list_tables_raw, get_table_data_raw
+from src.mssql.server import get_connection, is_read_only_query, execute_sql_raw, list_tables_raw, get_table_data_raw, describe_table_raw
 
 class TestDatabaseConnection:
     def test_connection(self):
@@ -80,3 +80,28 @@ class TestResources:
         """Test invalid table name handling"""
         result = get_table_data_raw("'; DROP TABLE users; --")
         assert "Error:" in result
+
+class TestDescribeTable:
+    def test_describe_valid_table(self):
+        """Test describing a valid table"""
+        result = describe_table_raw("SalesLT.Customer")
+        assert "COLUMN_NAME,DATA_TYPE" in result
+        assert "CustomerID" in result
+        assert "Error" not in result
+        
+    def test_describe_table_without_schema(self):
+        """Test describing table without schema prefix"""
+        result = describe_table_raw("Customer")
+        assert "COLUMN_NAME,DATA_TYPE" in result
+        assert "CustomerID" in result
+        assert "Error" not in result
+        
+    def test_describe_nonexistent_table(self):
+        """Test describing non-existent table"""
+        result = describe_table_raw("NonExistentTable")
+        assert "Error: Table 'NonExistentTable' not found" in result
+        
+    def test_describe_invalid_table_name(self):
+        """Test describing with invalid table name"""
+        result = describe_table_raw("'; DROP TABLE users; --")
+        assert "Error: Invalid table name format" in result

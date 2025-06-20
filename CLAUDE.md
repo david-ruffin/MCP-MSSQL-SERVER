@@ -46,6 +46,7 @@
 - Follow best practices for commit messages and version control workflow
 - Verify test suite passes before making any commits
 - Use meaningful and descriptive commit messages that explain the changes
+- All commits should be remote github server, never local
 
 ## Task Completion and Validation
 
