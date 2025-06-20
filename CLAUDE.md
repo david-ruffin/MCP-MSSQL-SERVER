@@ -3,6 +3,9 @@
 - Always run comprehensive tests before committing code changes
 - Implement unit tests, integration tests, and regression tests
 - Verify code functionality across different scenarios and edge cases
+- Use     pytest and unittest for every task to confirm its complete and working. then once complete add it to the repo
+- Lets remove unittest from our testing and ONLY use pytest
+- For every task, test and create test files if needed. Before committing to GitHub, delete test files unless you think we should keep them. Add them to a test folder if needed
 
 ## Python Development
 
