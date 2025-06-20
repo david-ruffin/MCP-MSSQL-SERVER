@@ -6,6 +6,7 @@
 - Use     pytest and unittest for every task to confirm its complete and working. then once complete add it to the repo
 - Lets remove unittest from our testing and ONLY use pytest
 - For every task, test and create test files if needed. Before committing to GitHub, delete test files unless you think we should keep them. Add them to a test folder if needed
+- Before starting EVERY task, use the TDD approach so you outline the tests up front, then test against them
 
 ## Python Development
 
@@ -69,3 +70,14 @@
   3. REFACTOR: Improve while keeping tests green  
   4. MCP TEST: Run `python tests/test_mcp.py` to verify actual MCP tool functionality
 - This ensures both unit tests AND real MCP integration work correctly
+
+## CRITICAL TDD ENFORCEMENT
+
+- **BEFORE STARTING EVERY TASK: Use TDD approach and outline tests up front, then test against them**
+- **NO EXCEPTIONS:** Write failing tests FIRST, then build minimal code to pass
+- **CONSEQUENCE:** User will kill a kitten if TDD is not followed 🐱💀
+- **MANDATORY PROCESS:**
+  1. Write failing tests FIRST
+  2. Build minimal code to pass tests
+  3. Refactor while keeping tests green
+  4. Only then proceed with implementation

@@ -26,7 +26,17 @@ load_dotenv()
 class PocketDBAClient:
     def __init__(self):
         self.mcp_client = None
-        self.anthropic = Anthropic()
+        self.test_mode = os.getenv('TEST_MODE', 'false').lower() == 'true'
+        
+        # Ensure API key is loaded from environment (not needed in test mode)
+        if not self.test_mode:
+            api_key = os.getenv('ANTHROPIC_API_KEY')
+            if not api_key:
+                raise ValueError("ANTHROPIC_API_KEY not found in environment. Please add it to your .env file.")
+            self.anthropic = Anthropic(api_key=api_key)
+        else:
+            self.anthropic = None  # No API client needed in test mode
+            
         self.tools = []
         self.connected = False
         self.exit_stack = None
@@ -84,6 +94,10 @@ class PocketDBAClient:
     async def _process_query(self, message: str, history: List[Union[Dict[str, Any], ChatMessage]]):
         """Async processing of user query with Claude and MCP tools"""
         try:
+            # TEST MODE: Return canned responses without API calls
+            if self.test_mode:
+                return await self._process_query_test_mode(message)
+            
             # Convert history to Claude format
             claude_messages = []
             for msg in history:
@@ -168,6 +182,65 @@ Guidelines:
                 "role": "assistant",
                 "content": f"❌ Error processing your request: {str(e)}"
             }]
+    
+    async def _process_query_test_mode(self, message: str):
+        """Process queries in test mode with canned responses"""
+        message_lower = message.lower()
+        
+        # Simulate processing time
+        await asyncio.sleep(0.5)
+        
+        # Canned responses for common queries
+        if "tables" in message_lower:
+            # Simulate execute_sql tool call
+            result = await self.mcp_client.call_tool("execute_sql", {
+                "query": "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'"
+            })
+            formatted = self._format_sql_results(result[0].text if result else "")
+            return [
+                {"role": "assistant", "content": "I'll check what tables are in your database."},
+                {"role": "assistant", "content": f"📊 **Execute Sql**\n\n{formatted}"}
+            ]
+            
+        elif "customer" in message_lower and ("count" in message_lower or "many" in message_lower):
+            # Simulate count query
+            result = await self.mcp_client.call_tool("execute_sql", {
+                "query": "SELECT COUNT(*) as customer_count FROM SalesLT.Customer"
+            })
+            formatted = self._format_sql_results(result[0].text if result else "")
+            return [
+                {"role": "assistant", "content": "Let me count the customers for you."},
+                {"role": "assistant", "content": f"📊 **Execute Sql**\n\n{formatted}"}
+            ]
+            
+        elif "structure" in message_lower or "describe" in message_lower:
+            # Extract table name if mentioned
+            if "customer" in message_lower:
+                result = await self.mcp_client.call_tool("describe_table", {
+                    "table_name": "SalesLT.Customer"
+                })
+                formatted = self._format_table_description(result[0].text if result else "")
+                return [
+                    {"role": "assistant", "content": "I'll show you the Customer table structure."},
+                    {"role": "assistant", "content": f"📊 **Describe Table**\n\n{formatted}"}
+                ]
+            
+        elif "relationship" in message_lower:
+            # Default relationships query
+            result = await self.mcp_client.call_tool("get_relationships", {
+                "table_name": "SalesLT.SalesOrderHeader"
+            })
+            formatted = self._format_relationships(result[0].text if result else "")
+            return [
+                {"role": "assistant", "content": "I'll show you the table relationships."},
+                {"role": "assistant", "content": f"📊 **Get Relationships**\n\n{formatted}"}
+            ]
+        
+        # Default response
+        return [{
+            "role": "assistant",
+            "content": "TEST MODE: I understand your question. In production, I would use Claude to generate the appropriate SQL query and return results."
+        }]
     
     def _format_sql_results(self, data: str) -> str:
         """Format SQL query results for display"""
