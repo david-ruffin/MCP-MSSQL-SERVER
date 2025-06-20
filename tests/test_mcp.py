@@ -6,17 +6,19 @@ Uses FastMCP's in-memory testing capability
 import asyncio
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastmcp import Client
 from src.mssql.server import mcp
 
-async def test_all_tools():
+def test_all_tools():
     """Test all available MCP tools"""
-    print("🚀 Testing pocket-dba MCP server...\n")
     
-    # Connect to server instance directly (in-memory)
-    async with Client(mcp) as client:
+    async def run_tests():
+        print("🚀 Testing pocket-dba MCP server...\n")
+        
+        # Connect to server instance directly (in-memory)
+        async with Client(mcp) as client:
         
         # List available tools
         print("📋 Available tools:")
@@ -52,6 +54,22 @@ async def test_all_tools():
             print(f"❌ Error: {e}")
         print()
         
+        # Test get_relationships tool
+        print("🔍 Testing get_relationships tool:")
+        try:
+            result = await client.call_tool("get_relationships", {
+                "table_name": "SalesLT.SalesOrderHeader"
+            })
+            print(f"✅ SalesOrderHeader relationships:")
+            lines = result[0].text.split('\n')
+            for line in lines[:5]:  # Show first few relationships
+                print(f"   {line}")
+            if len(lines) > 5:
+                print(f"   ... and {len(lines) - 5} more relationships")
+        except Exception as e:
+            print(f"❌ Error: {e}")
+        print()
+        
         # Test invalid query (security validation)
         print("🔒 Testing security validation:")
         try:
@@ -74,6 +92,8 @@ async def test_all_tools():
             print(f"❌ Error: {e}")
         
         print("\n✅ All tests completed!")
+    
+    asyncio.run(run_tests())
 
 if __name__ == "__main__":
-    asyncio.run(test_all_tools())
+    test_all_tools()

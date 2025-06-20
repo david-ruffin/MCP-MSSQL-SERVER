@@ -59,3 +59,13 @@
 - Create a roadmap.md file to outline project tasks and steps at a high level
 - The roadmap should focus on WHAT needs to be done, not HOW (implementation details will be discovered during engineering)
 - Incorporate roadmap information into README.md to provide clear project direction
+
+## MCP Testing with FastMCP In-Memory Client
+
+- Use `tests/test_mcp.py` for rapid MCP tool testing without Claude Desktop restarts
+- For every MCP implementation, follow TDD approach:
+  1. RED: Write failing test first
+  2. GREEN: Write minimal code to pass
+  3. REFACTOR: Improve while keeping tests green  
+  4. MCP TEST: Run `python tests/test_mcp.py` to verify actual MCP tool functionality
+- This ensures both unit tests AND real MCP integration work correctly

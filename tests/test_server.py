@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.mssql.server import get_connection, is_read_only_query, execute_sql_raw, list_tables_raw, get_table_data_raw, describe_table_raw
+from src.mssql.server import get_connection, is_read_only_query, execute_sql_raw, list_tables_raw, get_table_data_raw, describe_table_raw, get_relationships_raw
 
 class TestDatabaseConnection:
     def test_connection(self):
@@ -104,4 +104,29 @@ class TestDescribeTable:
     def test_describe_invalid_table_name(self):
         """Test describing with invalid table name"""
         result = describe_table_raw("'; DROP TABLE users; --")
+        assert "Error: Invalid table name format" in result
+
+class TestGetRelationships:
+    def test_get_relationships_valid_table(self):
+        """Test getting relationships for a table with foreign keys"""
+        result = get_relationships_raw("SalesLT.SalesOrderHeader")
+        assert "CONSTRAINT_NAME,COLUMN_NAME,REFERENCED_TABLE,REFERENCED_COLUMN" in result
+        assert "CustomerID" in result
+        assert "Error" not in result
+        
+    def test_get_relationships_no_relationships(self):
+        """Test getting relationships for table without foreign keys"""
+        result = get_relationships_raw("SalesLT.ProductCategory")
+        assert "CONSTRAINT_NAME,COLUMN_NAME,REFERENCED_TABLE,REFERENCED_COLUMN" in result
+        # May or may not have relationships, but should not error
+        assert "Error" not in result
+        
+    def test_get_relationships_invalid_table(self):
+        """Test getting relationships for non-existent table"""
+        result = get_relationships_raw("NonExistentTable")
+        assert "Error: Table 'NonExistentTable' not found" in result
+        
+    def test_get_relationships_invalid_format(self):
+        """Test getting relationships with invalid table name format"""
+        result = get_relationships_raw("'; DROP TABLE users; --")
         assert "Error: Invalid table name format" in result
