@@ -23,6 +23,10 @@
   1. Write a failing test
   2. Implement the minimum code to make the test pass
   3. Refactor the code while keeping tests green
+- ALWAYS follow TDD  To follow TDD properly, I should have:
+  1. Written test_describe_valid_table() first (failing)
+  2. Written minimal describe_table_raw() to make it pass
+  3. Added more tests, expanded functionality iteratively
 
 ## Project Development Approach
 
