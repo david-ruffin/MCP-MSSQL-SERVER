@@ -1,315 +1,259 @@
-# Python MSSQL MCP Server
+# Pocket DBA MCP Server - "DBA in Your Pocket"
 
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/david-ruffin/MCP-MSSQL-SERVER)
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org)
-[![MCP](https://img.shields.io/badge/MCP-1.2.0-green.svg)](https://github.com/modelcontextprotocol)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-teal.svg)](https://fastapi.tiangolo.com)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/david-ruffin/pocket-dba-mcp-server)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org)
+[![FastMCP](https://img.shields.io/badge/FastMCP-2.8.1-green.svg)](https://github.com/jlowin/fastmcp)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
-A Model Context Protocol server implementation in Python that provides access to Microsoft SQL Server databases. This server enables Language Models to inspect table schemas and execute SQL queries through a standardized interface.
+## Project Vision
+
+Transform how business owners interact with their data by creating a conversational interface that replaces the traditional static BI workflow. Instead of requesting reports from DBAs and waiting for Power Platform visualizations, business owners can have real-time conversations with their database and get instant insights.
+
+**Current State:** Business owner → Question → DBA → SQL Query → Power Platform → Static Report → Limited Follow-up
+
+**Target State:** Business owner → Conversational AI → Dynamic Query → Instant Insights → Unlimited Follow-up
+
+## Current Implementation Status
+
+✅ **Phase 1 Complete**: Core MCP Server with FastMCP
+- FastMCP server implementation with stdio transport
+- Read-only SQL Server access with security validation  
+- Basic tools: `execute_sql` with query validation
+- Resources: `list_tables` and `get_table_data`
+- Comprehensive test suite (9 tests passing)
+- Proven integration with Claude Desktop
 
 ## Features
 
-### Core Functionality
-* Asynchronous operation using Python's `asyncio`
-* Environment-based configuration using `python-dotenv`
-* Comprehensive logging system
-* Connection pooling and management via pyodbc
-* Error handling and recovery
-* FastAPI integration for API endpoints
-* Pydantic models for data validation
-* MSSQL connection handling with ODBC Driver
+### Current Capabilities
+- **Read-Only Database Access**: Complete visibility into SQL Server database with zero write permissions
+- **Security-First Design**: Advanced SQL injection prevention and query validation
+- **FastMCP Implementation**: Simplified syntax with decorators for rapid development
+- **Schema Discovery**: List all database tables and their structure
+- **Query Execution**: Execute validated SELECT statements safely
+- **Error Handling**: Graceful handling of malformed queries and connection issues
 
-## Prerequisites
+### Architecture
+```
+Business Owner → Claude Desktop → FastMCP Client → pocket-dba-mcp-server → SQL Server
+```
 
-* Python 3.x
-* Required Python packages:
-  * pyodbc
-  * pydantic
-  * python-dotenv
-  * mcp-server
-* ODBC Driver 17 for SQL Server
+## Installation & Setup
 
-## Installation
+### Prerequisites
+- Python 3.12+
+- Microsoft ODBC Driver 18 for SQL Server
+- SQL Server database access
 
+### Quick Start
 ```bash
-git clone https://github.com/david-ruffin/MCP-MSSQL-SERVER.git
-cd MCP-MSSQL-SERVER
+git clone https://github.com/david-ruffin/pocket-dba-mcp-server.git
+cd pocket-dba-mcp-server
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Screenshots
-
-![MCP MSSQL Server Demo](screenshots/2025-01-27_05-43-34.png)
-
-The screenshot above demonstrates the server being used with Claude to analyze and visualize SQL data.
-
-## Project Structure
-
-```
-PY-MCP-MSSQL/
-├── src/
-│   └── mssql/
-│       ├── __init__.py
-│       └── server.py
-├── tests/
-│   ├── __init__.py
-│   ├── test_mssql.py
-│   └── test_packages.py
-├── .env
-├── .env.example
-├── .gitignore
-├── README.md
-└── requirements.txt
-```
-
-### Directory Structure Explanation
-* `src/mssql/` - Main source code directory
-  * `__init__.py` - Package initialization
-  * `server.py` - Main server implementation
-* `tests/` - Test files directory
-  * `__init__.py` - Test package initialization
-  * `test_mssql.py` - MSSQL functionality tests
-  * `test_packages.py` - Package dependency tests
-* `.env` - Environment configuration file (not in git)
-* `.env.example` - Example environment configuration
-* `.gitignore` - Git ignore rules
-* `README.md` - Project documentation
-* `requirements.txt` - Project dependencies
-
-## Configuration
-
-Create a `.env` file in the project root:
-
+### Configuration
+Create a `.env` file:
 ```env
 MSSQL_SERVER=your_server
-MSSQL_DATABASE=your_database
+MSSQL_DATABASE=your_database  
 MSSQL_USER=your_username
 MSSQL_PASSWORD=your_password
-MSSQL_DRIVER={ODBC Driver 17 for SQL Server}
+MSSQL_DRIVER={ODBC Driver 18 for SQL Server}
 ```
 
-## ODBC Driver Setup & Verification
-
-**Important:** This server relies on the Microsoft ODBC Driver for SQL Server (version 17 or 18 recommended) being installed on the system where the server runs.
-
-### 🔍 How to Verify Installation
-
-**macOS / Linux:**
-
-Open your terminal and run:
-
-```bash
-odbcinst -q -d
-```
-
-Look for output similar to this (the exact version might differ):
-
-```
-[ODBC Driver 18 for SQL Server]
-```
-
-**Windows (Command Prompt or PowerShell):**
-
-Run this command in PowerShell:
-
-```powershell
-Get-OdbcDriver | Where-Object Name -like "*SQL Server*"
-```
-
-Alternatively, open the ODBC Data Sources administrator:
-
-1.  Press `Win + R`, type `odbcad32.exe`, and press Enter.
-2.  Go to the "Drivers" tab.
-3.  Look for "ODBC Driver 17 for SQL Server" or "ODBC Driver 18 for SQL Server".
-
-### 🛠️ Installation if Missing
-
-If the required driver is not installed:
-
-*   **macOS / Linux:** Follow Microsoft's official installation guide:
-    [Install the Microsoft ODBC driver for SQL Server (Linux)](https://learn.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
-*   **Windows:** Download and install the driver from Microsoft:
-    [Download ODBC Driver for SQL Server](https://learn.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server)
-    *Direct link for ODBC Driver 18 (check the page for the latest):* [https://go.microsoft.com/fwlink/?linkid=2221350](https://go.microsoft.com/fwlink/?linkid=2221350)
-
-### 🧪 Test Connection Manually (Optional)
-
-After configuring your `.env` file (see Configuration section above), you can test the connection directly using `pyodbc` from your Python environment (ensure `pyodbc` is installed via `requirements.txt`):
-
-```python
-import os
-import pyodbc
-from dotenv import load_dotenv
-
-load_dotenv() # Load variables from .env
-
-server = os.getenv('MSSQL_SERVER')
-database = os.getenv('MSSQL_DATABASE')
-username = os.getenv('MSSQL_USER')
-password = os.getenv('MSSQL_PASSWORD')
-driver = os.getenv('MSSQL_DRIVER') # Make sure this matches your installed driver
-
-if not all([server, database, username, password, driver]):
-    print("Error: Ensure MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD, and MSSQL_DRIVER are set in your .env file")
-else:
-    try:
-        # Note: TrustServerCertificate=yes might be needed for Azure SQL or certain configs
-        # Adjust other parameters like Port if necessary
-        conn_str = (
-            f"DRIVER={{{driver}}};"
-            f"SERVER={server};"
-            f"DATABASE={database};"
-            f"UID={username};"
-            f"PWD={password};"
-            f"TrustServerCertificate=yes;"
-        )
-        print(f"Attempting to connect with:\n{conn_str}\n")
-        conn = pyodbc.connect(conn_str)
-        print("Connection Successful!")
-        conn.close()
-        print("Connection Closed.")
-    except pyodbc.Error as ex:
-        sqlstate = ex.args[0]
-        print(f"Connection Failed. SQLSTATE: {sqlstate}")
-        print(ex)
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
-```
-
-### ✅ Final `.env` Example
-
-Make sure your `.env` file looks similar to this, replacing the placeholder values with your actual credentials and ensuring the `MSSQL_DRIVER` matches the exact name shown by `odbcinst -q -d` or the ODBC Administrator:
-
-```ini
-MSSQL_SERVER=your_server.database.windows.net
-MSSQL_DATABASE=your_database_name
-MSSQL_USER=your_db_username
-MSSQL_PASSWORD=your_secret_password
-MSSQL_DRIVER=ODBC Driver 18 for SQL Server
-```
-
-## API Implementation Details
-
-### Resource Listing
-```python
-@app.list_resources()
-async def list_resources() -> list[Resource]
-```
-* Lists all available tables in the database
-* Returns table names with URIs in the format `mssql://<table_name>/data`
-* Includes table descriptions and MIME types
-
-### Resource Reading
-```python
-@app.read_resource()
-async def read_resource(uri: AnyUrl) -> str
-```
-* Reads data from specified table
-* Accepts URIs in the format `mssql://<table_name>/data`
-* Returns first 100 rows in CSV format
-* Includes column headers
-
-### SQL Execution
-```python
-@app.call_tool()
-async def call_tool(name: str, arguments: dict) -> list[TextContent]
-```
-* Executes SQL queries
-* Supports both SELECT and modification queries
-* Returns results in CSV format for SELECT queries
-* Returns affected row count for modification queries
-
-## Usage with MCP Clients (Claude Desktop, Cursor, WindSurf, etc.)
-
-Add this server to your MCP client configuration file. The exact file location depends on the client:
-
-*   **Claude Desktop:**
-    *   macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-    *   Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-*   **Cursor:** Check Cursor's MCP settings documentation.
-*   **WindSurf:** Check WindSurf's MCP settings documentation.
-
-Add an entry for this server under the `mcpServers` key, adjusting paths as needed:
-
+### Claude Desktop Integration
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "MCP-MSSQL": { // You can choose a name for the server
-      "command": "<path_to_your_venv>/bin/python",
-      "args": [
-        "<path_to_project_root>/src/mssql/server.py"
-      ],
+    "pocket-dba": {
+      "command": "/path/to/pocket-dba-mcp-server/venv/bin/python",
+      "args": ["/path/to/pocket-dba-mcp-server/src/mssql/server.py"],
       "env": {
-        "MSSQL_SERVER": "your_server", // See .env configuration
+        "MSSQL_SERVER": "your_server",
         "MSSQL_DATABASE": "your_database",
         "MSSQL_USER": "your_username", 
-        "MSSQL_PASSWORD": "your_password", 
-        "MSSQL_DRIVER": "{ODBC Driver 17 for SQL Server}" // Or your installed driver name
+        "MSSQL_PASSWORD": "your_password",
+        "MSSQL_DRIVER": "{ODBC Driver 18 for SQL Server}"
       }
-    },
-    // ... other servers ...
+    }
   }
 }
 ```
 
-**Notes:**
+## Project Structure
+```
+pocket-dba-mcp-server/
+├── src/mssql/
+│   ├── server.py          # FastMCP server implementation
+│   └── server_old.py      # Legacy standard MCP version
+├── tests/
+│   └── test_server.py     # Comprehensive test suite
+├── screenshots/           # Project demonstrations
+├── .env                   # Database configuration (create from template)
+├── .env.example          # Configuration template
+├── CLAUDE.md             # Project development instructions
+├── requirements.txt      # Python dependencies
+├── roadmap.md           # Detailed project requirements
+└── README.md           # This file
+```
 
-*   Replace `<path_to_your_venv>` with the absolute path to the Python interpreter inside your project's virtual environment.
-*   Replace `<path_to_project_root>` with the absolute path to the root directory of this project (`MCP-MSSQL-SERVER`).
-*   The values in the `env` section should match your `.env` file. Ensure the Python script can access these environment variables or the `.env` file itself when run by the MCP client.
-*   The server name (`MCP-MSSQL` in this example) is how you will refer to this server's tools within the client (e.g., `@MCP-MSSQL list_tables`).
+## Current Tools & Resources
 
-## Error Handling
+### Tools
+- **`execute_sql`**: Execute read-only SELECT queries with validation
 
-The server implements comprehensive error handling for:
-* Database connection failures
-* Invalid SQL queries
-* Resource access errors
-* URI validation
-* Tool execution errors
+### Resources  
+- **`mssql://tables`**: List all database tables
+- **`mssql://table/{table_name}`**: Get table data (top 100 rows)
 
-All errors are logged and returned with appropriate error messages.
+## Development Roadmap
 
-## Security Features
+### Phase 1: Core Server ✅ COMPLETE
+- [x] Set up Python 3.12 virtual environment
+- [x] Implement FastMCP server with stdio transport  
+- [x] Create execute_sql tool with security validation
+- [x] Add table listing and data resources
+- [x] Comprehensive test suite
+- [x] Claude Desktop integration verified
 
-* Environment variable based configuration
-* Connection string security
-* Result set size limits
-* Input validation through Pydantic
-* Proper SQL query handling
+### Phase 2: Enhanced Database Discovery
+- [ ] Implement `describe_table` tool for schema inspection
+- [ ] Add `get_relationships` tool for foreign key discovery
+- [ ] Create table metadata resources (columns, types, constraints)
+- [ ] Add index information for query optimization
+- [ ] Implement connection pooling for efficiency
+
+### Phase 3: Advanced Query Capabilities  
+- [ ] Add query complexity analysis and timeout limits
+- [ ] Implement result set size limits for performance
+- [ ] Create audit trail logging for compliance
+- [ ] Add query optimization suggestions
+- [ ] Support for WITH clauses and CTEs
+
+### Phase 4: Client Interface Development
+- [ ] Build Gradio chat interface
+- [ ] Implement MCP client with message routing
+- [ ] Create session manager for conversation context
+- [ ] Add result renderer for data visualization
+- [ ] Test end-to-end conversation flow
+
+### Phase 5: Business Intelligence Features
+- [ ] Multi-table analysis capabilities
+- [ ] Time series analysis and trend identification
+- [ ] Cohort analysis for customer behavior tracking
+- [ ] Data segmentation and pattern discovery
+- [ ] Basic forecasting based on historical data
+
+### Phase 6: Production Readiness
+- [ ] Performance optimization and monitoring
+- [ ] Enhanced error handling and recovery
+- [ ] Data export capabilities  
+- [ ] Integration with existing BI tools
+- [ ] Multi-database support
+
+## Business Use Cases
+
+### Primary Scenarios
+1. **Exploratory Analysis**: "Show me sales trends over the last 6 months"
+2. **Correlation Discovery**: "Find me interesting patterns in customer behavior"  
+3. **Ad-hoc Reporting**: "Compare performance across regions"
+4. **Data Validation**: "Are there any data quality issues I should know about?"
+5. **Strategic Insights**: "What factors most influence customer retention?"
+
+### Advanced Capabilities (Future)
+- **Multi-table Analysis**: Claude automatically joins related tables
+- **Time Series Analysis**: Identify trends, seasonality, and anomalies
+- **Segmentation**: Identify distinct customer or product groups
+- **Forecasting**: Predictive insights based on historical data
+
+## Security & Safety
+
+### Data Protection
+- **Read-Only Access**: No INSERT, UPDATE, DELETE, or DDL operations
+- **Query Validation**: Server validates all queries before execution  
+- **SQL Injection Prevention**: Advanced pattern detection and blocking
+- **Connection Security**: Secure credential management
+- **Error Handling**: Graceful handling without data exposure
+
+### Access Control
+- **Authentication**: Database credentials managed securely
+- **Authorization**: Respects existing database permissions
+- **Audit Trail**: Logs all queries for compliance and monitoring
+
+## Testing
+
+Run the comprehensive test suite:
+```bash
+source venv/bin/activate
+python -m pytest tests/ -v
+```
+
+Current test coverage:
+- Database connection validation
+- Query security validation (9 different attack patterns)
+- SQL execution with valid/invalid queries
+- Resource listing and data retrieval
+- Error handling for malformed requests
+
+## Performance Considerations
+
+### Current Limitations
+- Query timeout: 30 seconds default
+- Result set: Top 100 rows for table data
+- Read-only operations only
+- Single connection per request
+
+### Planned Optimizations
+- Connection pooling for efficiency
+- Query complexity analysis  
+- Resource usage monitoring
+- Caching for frequently accessed metadata
+
+## User Experience Goals
+
+### For Business Owners
+- **Immediacy**: Get answers in seconds, not days
+- **Accessibility**: No SQL knowledge required
+- **Conversational**: Natural follow-up questions
+- **Comprehensive**: Access to all business data
+- **Insightful**: AI suggests relevant analysis
+
+### For Technical Teams  
+- **Security**: No risk to production data
+- **Compliance**: Full audit trail of data access
+- **Performance**: Optimized queries that don't impact operations
+- **Maintainability**: Simple, clean codebase
+
+## Expected Outcome
+
+A proof-of-concept that demonstrates how conversational AI can democratize data access, enabling business owners to explore their data independently while maintaining security and accuracy. The system should feel like having a senior data analyst available 24/7 for any business question.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Write tests for your changes
+4. Ensure all tests pass (`python -m pytest tests/ -v`)
+5. Commit your changes (`git commit -m 'Add some amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+## Dependencies
+
+```
+fastmcp>=2.8.1
+pyodbc>=4.0.35
+python-dotenv>=1.0.1
+```
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contributing
+---
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Requirements
-
-Create a `requirements.txt` file with:
-
-```
-fastapi>=0.104.1
-pydantic>=2.10.6
-uvicorn>=0.34.0 
-python-dotenv>=1.0.1
-pyodbc>=4.0.35
-anyio>=4.5.0
-mcp==1.2.0
-```
-
-These versions have been tested and verified to work together. The key components are:
-* `fastapi` and `uvicorn` for the API server
-* `pydantic` for data validation
-* `pyodbc` for SQL Server connectivity
-* `mcp` for Model Context Protocol implementation
-* `python-dotenv` for environment configuration
-* `anyio` for asynchronous I/O support
+*"Democratizing data access through conversational AI"*

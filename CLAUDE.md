@@ -46,3 +46,11 @@
 - Follow best practices for commit messages and version control workflow
 - Verify test suite passes before making any commits
 - Use meaningful and descriptive commit messages that explain the changes
+
+## Task Completion and Validation
+
+- When you think you finish a task, do not message until you've run tests to confidently confirm the task is working and have proof
+- Wait for user approval before submitting to GitHub
+- Create a roadmap.md file to outline project tasks and steps at a high level
+- The roadmap should focus on WHAT needs to be done, not HOW (implementation details will be discovered during engineering)
+- Incorporate roadmap information into README.md to provide clear project direction
