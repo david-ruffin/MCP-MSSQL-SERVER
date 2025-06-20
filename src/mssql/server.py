@@ -1,182 +1,117 @@
 #!/usr/bin/env python3
-import json
-import sys
 import os
-from dotenv import load_dotenv
-import asyncio
-import logging
 import pyodbc
-from mcp.server import Server
-from mcp.types import Resource, Tool, TextContent
-from pydantic import AnyUrl
+from dotenv import load_dotenv
+from fastmcp import FastMCP
+from typing import List, Dict
 import re
 
 # Load environment variables
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("mssql_mcp_server")
+# Initialize FastMCP
+mcp = FastMCP("pocket-dba-mcp-server")
 
-app = Server("mssql_mcp_server")
+# Database configuration
+DB_CONFIG = {
+    "server": os.getenv("MSSQL_SERVER"),
+    "database": os.getenv("MSSQL_DATABASE"),
+    "user": os.getenv("MSSQL_USER"),
+    "password": os.getenv("MSSQL_PASSWORD"),
+    "driver": os.getenv("MSSQL_DRIVER")
+}
 
-class DBConfig:
-    def __init__(self):
-        self.config = {
-            "server": os.getenv("MSSQL_SERVER"),
-            "database": os.getenv("MSSQL_DATABASE"), 
-            "user": os.getenv("MSSQL_USER"),
-            "password": os.getenv("MSSQL_PASSWORD"),
-            "driver": os.getenv("MSSQL_DRIVER")
-        }
-        self.connection = None
+def get_connection():
+    """Create database connection"""
+    conn_str = (
+        f"DRIVER={DB_CONFIG['driver']};"
+        f"SERVER={DB_CONFIG['server']};"
+        f"DATABASE={DB_CONFIG['database']};"
+        f"UID={DB_CONFIG['user']};"
+        f"PWD={DB_CONFIG['password']};"
+        "TrustServerCertificate=yes"
+    )
+    return pyodbc.connect(conn_str, readonly=True)
 
-    def get_connection(self):
-        try:
-            if not self.connection:
-                conn_str = (
-                    f"DRIVER={self.config['driver']};"
-                    f"SERVER={self.config['server']};"
-                    f"DATABASE={self.config['database']};"
-                    f"UID={self.config['user']};"
-                    f"PWD={self.config['password']};"
-                    "TrustServerCertificate=yes"
-                )
-                self.connection = pyodbc.connect(conn_str, readonly=True)  # readonly=True
-            return self.connection
-        except:
-            self.connection = None
-            raise
-
-class SQLValidator:
-    @staticmethod
-    def is_read_only_query(query: str) -> bool:
-        # Clean the query
-        clean_query = query.strip().upper()
-        
-        # List of allowed statements
-        allowed_statements = [
-            'SELECT', 'WITH', 'DECLARE'
-        ]
-        
-        # List of disallowed statements
-        forbidden_statements = [
-            'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 
-            'ALTER', 'TRUNCATE', 'MERGE', 'UPSERT', 'REPLACE',
-            'GRANT', 'REVOKE', 'EXEC', 'EXECUTE', 'SP_'
-        ]
-        
-        # # Check if the query starts with an allowed statement
-        starts_with_allowed = any(clean_query.startswith(stmt) for stmt in allowed_statements)
-        if not starts_with_allowed:
-            return False
-            
-        # Check if the query contains any disallowed statements
-        contains_forbidden = any(stmt in clean_query for stmt in forbidden_statements)
-        if contains_forbidden:
-            return False
-            
-        # Additional checks for SQL Injection
-        has_dangerous_chars = re.search(r';\s*\w+', clean_query)  # ตรวจหา semicolon ที่ตามด้วยคำสั่ง
-        if has_dangerous_chars:
-            return False
-            
-        return True
-
-db = DBConfig()
-sql_validator = SQLValidator()
-
-@app.list_resources()
-async def list_resources() -> list[Resource]:
-    try:
-        conn = db.get_connection()
-        cursor = conn.cursor()
-        tables = cursor.execute(
-            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'"
-        ).fetchall()
-        
-        return [
-            Resource(
-                uri=f"mssql://{table[0]}/data",
-                name=f"Table: {table[0]}",
-                mimeType="application/json",
-                description=f"Data in table {table[0]}"
-            )
-            for table in tables
-        ]
-    except Exception as e:
-        logger.error(f"Failed to list resources: {str(e)}")
-        return []
-
-@app.read_resource()
-async def read_resource(uri: AnyUrl) -> str:
-    uri_str = str(uri)
-    if not uri_str.startswith("mssql://"):
-        raise ValueError(f"Invalid URI scheme: {uri_str}")
-        
-    table = uri_str[8:].split('/')[0]
-    query = f"SELECT TOP 100 * FROM {table}"
+def is_read_only_query(query: str) -> bool:
+    """Validate query is read-only"""
+    clean_query = query.strip().upper()
     
-    if not sql_validator.is_read_only_query(query):
-        raise ValueError("Only SELECT queries are allowed")
-        
-    try:
-        conn = db.get_connection()
-        cursor = conn.cursor()
-        cursor.execute(query)
-        columns = [desc[0] for desc in cursor.description]
-        rows = cursor.fetchall()
-        result = [",".join(map(str, row)) for row in rows]
-        return "\n".join([",".join(columns)] + result)
-    except Exception as e:
-        logger.error(f"Error reading table {table}: {str(e)}")
-        raise RuntimeError(f"Database error: {str(e)}")
-
-@app.list_tools()
-async def list_tools() -> list[Tool]:
-    return [
-        Tool(
-            name="execute_sql",
-            description="Execute a READ-ONLY SQL query (SELECT only)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "query": {"type": "string", "description": "SQL SELECT query to execute"}
-                },
-                "required": ["query"]
-            }
-        )
+    allowed_statements = ['SELECT', 'WITH', 'DECLARE']
+    forbidden_statements = [
+        'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 
+        'ALTER', 'TRUNCATE', 'MERGE', 'UPSERT', 'REPLACE',
+        'GRANT', 'REVOKE', 'EXEC', 'EXECUTE', 'SP_'
     ]
+    
+    starts_with_allowed = any(clean_query.startswith(stmt) for stmt in allowed_statements)
+    if not starts_with_allowed:
+        return False
+        
+    contains_forbidden = any(stmt in clean_query for stmt in forbidden_statements)
+    if contains_forbidden:
+        return False
+        
+    # Check for SQL injection patterns
+    has_dangerous_chars = re.search(r';\s*\w+', clean_query)
+    if has_dangerous_chars:
+        return False
+        
+    return True
 
-@app.call_tool()
-async def call_tool(name: str, arguments: dict) -> list[TextContent]:
-    if name != "execute_sql":
-        raise ValueError(f"Unknown tool: {name}")
+@mcp.resource("mssql://tables")
+def list_tables() -> str:
+    """List all database tables"""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
+            "WHERE TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        )
+        tables = cursor.fetchall()
+        return "\n".join([f"{schema}.{table}" for schema, table in tables])
 
-    query = arguments.get("query")
-    if not query:
-        raise ValueError("Query is required")
-
-    # Check if it's a read-only query
-    if not sql_validator.is_read_only_query(query):
-        return [TextContent(type="text", text="Error: Only SELECT queries are allowed")]
-
-    try:
-        conn = db.get_connection()
+@mcp.resource("mssql://table/{table_name}")
+def get_table_data(table_name: str) -> str:
+    """Get top 100 rows from a table"""
+    query = f"SELECT TOP 100 * FROM {table_name}"
+    
+    if not is_read_only_query(query):
+        return "Error: Invalid table name"
+    
+    with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(query)
-        
         columns = [desc[0] for desc in cursor.description]
         rows = cursor.fetchall()
-        result = [",".join(map(str, row)) for row in rows]
-        return [TextContent(type="text", text="\n".join([",".join(columns)] + result))]
-    except Exception as e:
-        return [TextContent(type="text", text=f"Error: {str(e)}")]
+        
+        result = [",".join(columns)]
+        result.extend([",".join(map(str, row)) for row in rows])
+        return "\n".join(result)
 
-async def main():
-    from mcp.server.stdio import stdio_server
-    print("MCP server started, waiting for requests on stdin...", file=sys.stderr)  # Added for troubleshooting
-    async with stdio_server() as (read_stream, write_stream):
-        await app.run(read_stream, write_stream, app.create_initialization_options())
+def execute_sql_raw(query: str) -> str:
+    """Raw function for executing SQL queries"""
+    if not is_read_only_query(query):
+        return "Error: Only SELECT queries are allowed"
+    
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            
+            columns = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
+            
+            result = [",".join(columns)]
+            result.extend([",".join(map(str, row)) for row in rows])
+            return "\n".join(result)
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def execute_sql(query: str) -> str:
+    """Execute a READ-ONLY SQL query (SELECT only)"""
+    return execute_sql_raw(query)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    mcp.run()
